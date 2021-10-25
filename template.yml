@@ -1,0 +1,116 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
+Description: VPC Api gateway test
+
+Parameters:
+  SSLCheck:
+    Type: String
+    AllowedValues: ["0", "1"]
+    Default: "1"
+    Description: Sets the SSL Check for quentry connections. "1" (Default) means SSL Check is enabled, "0" is disabled
+
+Resources:
+  VPC:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      CidrBlock: "10.0.0.0/16"
+
+  VPCSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Limits security group traffic
+      VpcId: !Ref "VPC"
+
+  VPCSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref "VPC"
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Sub "${AWS::Region}a"
+
+  ExternalAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub '${AWS::StackName}-external'
+      StageName: stage1
+
+  InternalAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub '${AWS::StackName}-internal'
+      StageName: stage1
+      Auth:
+        ResourcePolicy:
+          CustomStatements: [{
+                "Effect": "Deny",
+                "Principal": "*",
+                "Action": "execute-api:Invoke",
+                "Resource": "execute-api:/*/*/*",
+                "Condition": {
+                    "StringNotEquals": {
+                        "aws:sourceVpc": !Ref VPC
+                    }
+                }
+            },
+            {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "execute-api:Invoke",
+                "Resource": "execute-api:/*/*/*"
+            }]
+
+  InternalLambdaFunction:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs12.x
+      CodeUri: internal-lambda/
+      MemorySize: 128
+      Timeout: 30
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Environment:
+        Variables:
+          DEBUG: 'snkeos:*'
+      VpcConfig:
+        SubnetIds:
+          - !Ref VPCSubnetA
+        SecurityGroupIds:
+          - !Ref VPCSecurityGroup
+
+      Events:
+        Get:
+          Type: Api
+          Properties:
+            RestApiId: !Ref InternalAPI
+            Path: /
+            Method: GET
+
+  ExternalLambdaFunction:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs12.x
+      CodeUri: external-lambda/
+      MemorySize: 128
+      Timeout: 30
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Environment:
+        Variables:
+          DEBUG: 'snkeos:*'
+          INTERNAL_API_URL: !Sub 'https://${InternalAPI}.execute-api.${AWS::Region}.${AWS::URLSuffix}/stage1'
+      VpcConfig:
+        SubnetIds:
+          - !Ref VPCSubnetA
+        SecurityGroupIds:
+          - !Ref VPCSecurityGroup
+      Events:
+        Get:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExternalAPI
+            Path: /
+            Method: GET
