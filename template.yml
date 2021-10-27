@@ -39,6 +39,8 @@ Resources:
     Properties:
       ServiceName: !Sub 'com.amazonaws.${AWS::Region}.execute-api'
       PrivateDnsEnabled: 'true'
+      SubnetIds:
+        - !Ref 'VPCSubnetA'
       SecurityGroupIds:
         - !Ref VPCSecurityGroup
       VpcEndpointType: 'Interface'
