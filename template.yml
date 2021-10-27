@@ -112,7 +112,7 @@ Resources:
       Environment:
         Variables:
           DEBUG: 'snkeos:*'
-          INTERNAL_API_URL: !Sub 'https://${InternalAPI}.execute-api.${AWS::Region}.${AWS::URLSuffix}/stage1'
+          INTERNAL_API_URL: !Sub 'https://${InternalAPI}-${VpcEndpoint}.execute-api.${AWS::Region}.${AWS::URLSuffix}/stage1'
       VpcConfig:
         SubnetIds:
           - !Ref VPCSubnetA
