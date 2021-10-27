@@ -2,13 +2,6 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: "AWS::Serverless-2016-10-31"
 Description: VPC Api gateway test
 
-Parameters:
-  SSLCheck:
-    Type: String
-    AllowedValues: ["0", "1"]
-    Default: "1"
-    Description: Sets the SSL Check for quentry connections. "1" (Default) means SSL Check is enabled, "0" is disabled
-
 Resources:
   VPC:
     Type: "AWS::EC2::VPC"
