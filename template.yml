@@ -23,6 +23,13 @@ Resources:
       GroupDescription: Limits security group traffic
       VpcId: !Ref "VPC"
 
+  VpcEndpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.execute-api'
+      VpcEndpointType: 'Interface'
+      VpcId: !Ref VPC
+
   VPCSubnetA:
     Type: AWS::EC2::Subnet
     Properties:
@@ -41,6 +48,10 @@ Resources:
     Properties:
       Name: !Sub '${AWS::StackName}-internal'
       StageName: stage1
+      EndpointConfiguration:
+        Type: PRIVATE
+        VpcEndpointIds:
+          - !Ref VpcEndpoint
       Auth:
         ResourcePolicy:
           CustomStatements: [{
