@@ -33,7 +33,6 @@ Resources:
           IpProtocol: 'tcp'
           CidrIp: '0.0.0.0/0'
 
-
   VpcEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
     Properties:
