@@ -22,11 +22,25 @@ Resources:
     Properties:
       GroupDescription: Limits security group traffic
       VpcId: !Ref "VPC"
+      SecurityGroupEgress:
+        - FromPort: 0
+          ToPort: 0
+          IpProtocol: '-1'
+          CidrIp: '0.0.0.0/0'
+      SecurityGroupIngress:
+        - FromPort: 443
+          ToPort: 443
+          IpProtocol: 'tcp'
+          CidrIp: '0.0.0.0/0'
+
 
   VpcEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
     Properties:
       ServiceName: !Sub 'com.amazonaws.${AWS::Region}.execute-api'
+      PrivateDnsEnabled: 'true'
+      SecurityGroupIds:
+        - !Ref VPCSecurityGroup
       VpcEndpointType: 'Interface'
       VpcId: !Ref VPC
 
@@ -52,25 +66,6 @@ Resources:
         Type: PRIVATE
         VpcEndpointIds:
           - !Ref VpcEndpoint
-      Auth:
-        ResourcePolicy:
-          CustomStatements: [{
-                "Effect": "Deny",
-                "Principal": "*",
-                "Action": "execute-api:Invoke",
-                "Resource": "execute-api:/*/*/*",
-                "Condition": {
-                    "StringNotEquals": {
-                        "aws:sourceVpc": !Ref VPC
-                    }
-                }
-            },
-            {
-                "Effect": "Allow",
-                "Principal": "*",
-                "Action": "execute-api:Invoke",
-                "Resource": "execute-api:/*/*/*"
-            }]
 
   InternalLambdaFunction:
     Type: "AWS::Serverless::Function"
